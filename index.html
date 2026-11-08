@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f6fa">
+<title>SnapStudy: photo to study pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f5f6fa; --grid:#e3e6f0; --card:#ffffff; --ink:#17203a; --muted:#5c6684; --line:#dde1ec;
+  --hl:#ffe14d; --hl-ink:#17203a; --blue:#2448c9; --ok:#1d8f4e; --ok-bg:#e3f5ea; --bad:#cc3a3a; --bad-bg:#fbe7e7;
+  --display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,-apple-system,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#131828; --grid:#1c2338; --card:#1c2338; --ink:#eef1fb; --muted:#a2abc8; --line:#2c3552;
+    --hl:#ffe14d; --hl-ink:#17203a; --blue:#8aa4ff; --ok:#5fd68f; --ok-bg:#16352a; --bad:#ff8585; --bad-bg:#3a1d24;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px; min-height:100vh;
+}
+.wrap{max-width:720px;margin:0 auto;padding:20px 18px 60px}
+button{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo i{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--hl);color:var(--hl-ink);font-style:normal;font-size:17px;transform:rotate(-4deg)}
+.lang{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.lang select{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 8px}
+
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,9vw,54px);line-height:1.02;letter-spacing:-.035em;margin:34px 0 10px}
+.lede{color:var(--muted);margin:0 0 22px;font-size:17px;max-width:46ch}
+
+/* capture */
+.snap{background:var(--card);border:2px dashed var(--line);border-radius:22px;padding:26px 20px;text-align:center}
+.snap.drag{border-color:var(--blue)}
+.cam{width:74px;height:74px;margin:0 auto 12px;border-radius:22px;background:var(--hl);display:grid;place-items:center;transform:rotate(-3deg)}
+.cam svg{width:38px;height:38px}
+.snap p{margin:0 0 18px;color:var(--muted);font-size:15px}
+.btns{display:grid;gap:10px}
+.primary{background:var(--ink);color:var(--paper);border:0;border-radius:14px;padding:16px 18px;font-weight:700;font-size:17px;cursor:pointer;width:100%}
+.secondary{background:none;border:1px solid var(--line);border-radius:14px;padding:13px 18px;font-weight:600;cursor:pointer;width:100%}
+.secondary:hover{border-color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:14px 0 0}
+
+/* scanning */
+.scan{display:none;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;text-align:center}
+.scan.show{display:block}
+.photo{position:relative;border-radius:14px;overflow:hidden;max-height:360px;background:var(--grid)}
+.photo img{display:block;width:100%;max-height:360px;object-fit:contain}
+.photo::after{content:"";position:absolute;left:0;right:0;height:38%;top:-38%;background:linear-gradient(to bottom,transparent,rgba(255,225,77,.55));border-bottom:3px solid var(--hl);animation:sweep 1.6s ease-in-out infinite}
+@keyframes sweep{to{top:100%}}
+.status{margin:14px 0 2px;font-weight:600}
+.sub{color:var(--muted);font-size:14px;margin:0}
+
+.err{display:none;margin:16px 0 0;padding:14px 16px;border-radius:14px;background:var(--bad-bg);color:var(--bad);font-size:15px}
+.err.show{display:block}
+
+/* results */
+.result{display:none}
+.result.show{display:block}
+.head{display:flex;gap:14px;align-items:flex-start;margin:6px 0 18px}
+.head img{width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--line);flex:none}
+.head h2{font-family:var(--display);font-size:clamp(24px,6vw,32px);line-height:1.08;letter-spacing:-.02em;margin:0 0 4px}
+.meta{color:var(--muted);font-size:14px;margin:0}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.tab{background:none;border:0;border-radius:10px;padding:10px 4px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--hl);color:var(--hl-ink)}
+.panel{display:none;margin-top:16px}
+.panel.show{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 18px}
+
+.points{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.points li{padding-left:28px;position:relative}
+.points li::before{content:"";position:absolute;left:4px;top:.55em;width:12px;height:12px;border-radius:3px;background:var(--hl);transform:rotate(8deg)}
+.explain{white-space:pre-wrap;font-size:16.5px;line-height:1.7;margin:0}
+
+.score{display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;font-weight:600}
+.score b{font-family:var(--display);font-size:26px}
+.q{margin-bottom:12px}
+.q h3{font-size:16px;margin:0 0 12px;line-height:1.4}
+.opt{display:block;width:100%;text-align:left;background:none;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 8px;cursor:pointer;font-size:15px}
+.opt:hover:not(:disabled){border-color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);font-weight:600}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.why{font-size:14px;color:var(--muted);margin:4px 2px 0;display:none}
+.why.show{display:block}
+
+details.ex{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px}
+details.ex summary{cursor:pointer;padding:16px 18px;font-weight:600;list-style:none;display:flex;gap:10px;justify-content:space-between}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary::after{content:"Show answer";font-size:13px;color:var(--blue);font-weight:600;white-space:nowrap}
+details.ex[open] summary::after{content:"Hide"}
+details.ex p{margin:0;padding:0 18px 16px;color:var(--ink)}
+
+.again{margin-top:22px}
+@media (min-width:640px){ .btns{grid-template-columns:1fr 1fr} .wrap{padding-top:32px} }
+@media (prefers-reduced-motion:reduce){ .photo::after{animation:none;top:0;height:100%;opacity:.25} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo"><i aria-hidden="true">✎</i>SnapStudy</div>
+    <label class="lang">Explain in
+      <select id="lang"><option>English</option><option>Roman Urdu</option><option>Urdu</option></select>
+    </label>
+  </div>
+
+  <section id="start">
+    <h1>Snap the board. Get exam-ready.</h1>
+    <p class="lede">Take a photo of a whiteboard, textbook page or your notes. You’ll get a summary, a simple explanation, a quiz and likely exam questions.</p>
+
+    <div class="snap" id="drop">
+      <div class="cam" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#17203a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      </div>
+      <p>Messy handwriting is fine. Keep the page flat and well lit.</p>
+      <div class="btns">
+        <button class="primary" id="takeBtn">Take photo</button>
+        <button class="secondary" id="pickBtn">Choose from gallery</button>
+      </div>
+      <p class="hint">On a laptop, you can also drag a photo here.</p>
+      <input type="file" id="camera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="gallery" accept="image/*" hidden>
+    </div>
+  </section>
+
+  <section class="scan" id="scan" aria-live="polite">
+    <div class="photo"><img id="preview" alt="Your photo"></div>
+    <p class="status" id="status">Reading your page…</p>
+    <p class="sub">Usually takes 5–15 seconds</p>
+  </section>
+
+  <div class="err" id="err" role="alert"></div>
+
+  <section class="result" id="result">
+    <div class="head">
+      <img id="thumb" alt="">
+      <div><h2 id="title"></h2><p class="meta" id="meta"></p></div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-p="summary">Summary</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="explain">Explain</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="quiz">Quiz</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="exam">Exam Qs</button>
+    </div>
+
+    <div class="panel show" id="p-summary" role="tabpanel"><div class="card"><ul class="points" id="points"></ul></div></div>
+    <div class="panel" id="p-explain" role="tabpanel"><div class="card"><p class="explain" id="explain"></p></div></div>
+    <div class="panel" id="p-quiz" role="tabpanel">
+      <div class="score"><span>Your score</span><b id="score">0 / 5</b></div>
+      <div id="quiz"></div>
+    </div>
+    <div class="panel" id="p-exam" role="tabpanel"><div id="exam"></div></div>
+
+    <button class="primary again" id="again">Snap another page</button>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const show = (id, on) => $(id).classList.toggle("show", on);
+
+// Opened through server.js -> same origin. Opened another way (e.g. Live Server) -> use server.js on port 3000.
+const API = (location.port === "3000" ? "" : "http://localhost:3000") + "/api/study";
+
+try { const saved = localStorage.getItem("ss_lang"); if (saved) $("lang").value = saved; } catch(e){}
+$("lang").onchange = () => { try { localStorage.setItem("ss_lang", $("lang").value); } catch(e){} };
+
+$("takeBtn").onclick = () => $("camera").click();
+$("pickBtn").onclick = () => $("gallery").click();
+$("camera").onchange = e => handle(e.target.files[0]);
+$("gallery").onchange = e => handle(e.target.files[0]);
+const drop = $("drop");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("drag"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("drag"); handle(e.dataTransfer.files[0]); });
+$("again").onclick = reset;
+
+function reset(){
+  show("result", false); show("scan", false); show("err", false);
+  $("start").hidden = false; $("camera").value = ""; $("gallery").value = "";
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+// Shrink big phone photos so upload is fast on weak Wi-Fi.
+function shrink(file, max = 1600){
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file couldn’t be opened as a photo. Try a JPG or PNG.")); };
+    img.src = url;
+  });
+}
+
+const STEPS = ["Reading your page…", "Decoding the handwriting…", "Picking out the key ideas…", "Writing your quiz…", "Guessing what the examiner will ask…"];
+let stepTimer;
+
+async function handle(file){
+  if (!file) return;
+  show("err", false);
+  if (!file.type.startsWith("image/")) return fail("That file isn’t a photo. Choose a JPG or PNG image.");
+  let image;
+  try { image = await shrink(file); } catch(e){ return fail(e.message); }
+
+  $("start").hidden = true; show("result", false);
+  $("preview").src = image; show("scan", true);
+  let i = 0; $("status").textContent = STEPS[0];
+  clearInterval(stepTimer);
+  stepTimer = setInterval(() => { i = Math.min(i + 1, STEPS.length - 1); $("status").textContent = STEPS[i]; }, 2600);
+
+  try {
+    const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({image, lang: $("lang").value})});
+    let data = {};
+    try { data = await r.json(); } catch(e){}
+    if (!r.ok) throw new Error(data.error || "The server returned an error (" + r.status + ").");
+    render(data.pack, data.seconds, image);
+  } catch(e){
+    const msg = e instanceof TypeError
+      ? "Can’t reach the SnapStudy server. On the laptop, run “node server.js” and keep it open. On a phone, use the “Phone” link it prints, on the same Wi-Fi."
+      : e.message;
+    fail(msg);
+  } finally {
+    clearInterval(stepTimer); show("scan", false);
+  }
+}
+
+function fail(msg){
+  $("err").textContent = msg; show("err", true);
+  $("start").hidden = false; show("scan", false);
+}
+
+function render(p, secs, image){
+  if (!p || p.is_study_material === false){
+    fail((p && p.title ? p.title + " " : "") + "That doesn’t look like study material. Try a whiteboard, textbook page or notes.");
+    return;
+  }
+  $("thumb").src = image;
+  $("title").textContent = p.title || "Your study pack";
+  $("meta").textContent = [p.subject, secs ? `ready in ${secs.toFixed(1)}s` : ""].filter(Boolean).join(", ");
+
+  $("points").innerHTML = (p.summary || []).map(s => `<li>${esc(s)}</li>`).join("");
+  $("explain").textContent = p.explain || "";
+
+  const quiz = (p.quiz || []).filter(q => q && Array.isArray(q.options) && q.options.length);
+  let correct = 0, answered = 0;
+  $("score").textContent = `0 / ${quiz.length}`;
+  $("quiz").innerHTML = quiz.map((q, qi) => `
+    <div class="card q" data-q="${qi}">
+      <h3>${qi + 1}. ${esc(q.q)}</h3>
+      ${q.options.map((o, oi) => `<button class="opt" data-o="${oi}">${esc(o)}</button>`).join("")}
+      <p class="why">${esc(q.why)}</p>
+    </div>`).join("");
+  $("quiz").querySelectorAll(".q").forEach(card => {
+    const q = quiz[+card.dataset.q], ans = Number(q.answer);
+    card.querySelectorAll(".opt").forEach(btn => btn.onclick = () => {
+      const pick = +btn.dataset.o;
+      card.querySelectorAll(".opt").forEach(b => { b.disabled = true; if (+b.dataset.o === ans) b.classList.add("right"); });
+      if (pick !== ans) btn.classList.add("wrong"); else correct++;
+      answered++;
+      card.querySelector(".why").classList.add("show");
+      $("score").textContent = `${correct} / ${quiz.length}` + (answered === quiz.length ? (correct === quiz.length ? " 🎉" : "") : "");
+    });
+  });
+
+  $("exam").innerHTML = (p.exam || []).map(e => `
+    <details class="ex"><summary>${esc(e.q)}</summary><p>${esc(e.answer)}</p></details>`).join("");
+
+  selectTab("summary");
+  show("result", true);
+  $("result").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function selectTab(name){
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.p === name));
+  document.querySelectorAll(".panel").forEach(pn => pn.classList.toggle("show", pn.id === "p-" + name));
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => selectTab(t.dataset.p));
+</script>
+</body>
+</html>

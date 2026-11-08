@@ -1,0 +1,5 @@
+.env
+files.zip
+node_modules
+.vercel
+.server.log
