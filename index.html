@@ -182,7 +182,9 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const show = (id, on) => $(id).classList.toggle("show", on);
 
 // Opened through server.js -> same origin. Opened another way (e.g. Live Server) -> use server.js on port 3000.
-const API = (location.port === "3000" ? "" : "http://localhost:3000") + "/api/study";
+// Hosted (Vercel) -> same origin too. Only Live Server / file:// on this computer falls back to localhost:3000.
+const isLocalDev = location.protocol === "file:" || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port !== "3000");
+const API = (isLocalDev ? "http://localhost:3000" : "") + "/api/study";
 
 try { const saved = localStorage.getItem("ss_lang"); if (saved) $("lang").value = saved; } catch(e){}
 $("lang").onchange = () => { try { localStorage.setItem("ss_lang", $("lang").value); } catch(e){} };
@@ -244,7 +246,7 @@ async function handle(file){
     render(data.pack, data.seconds, image);
   } catch(e){
     const msg = e instanceof TypeError
-      ? "Can’t reach the SnapStudy server. On the laptop, run “node server.js” and keep it open. On a phone, use the “Phone” link it prints, on the same Wi-Fi."
+      ? "Can’t reach the SnapStudy server. Check your internet connection and try again. (Running locally? Start it with “node server.js” and keep it open.)"
       : e.message;
     fail(msg);
   } finally {
